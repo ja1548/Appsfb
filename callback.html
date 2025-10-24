@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Callback - Shopee Affiliate FB Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      padding: 20px;
+    }
+    h2 { color: #1877f2; }
+    pre {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h2>✅ Login Berhasil dari Facebook</h2>
+  <p>Berikut hasil data login kamu:</p>
+  <pre id="result">Menunggu data login...</pre>
+
+  <div id="fb-root"></div>
+  <script>
+    // Load Facebook SDK
+    (function(d, s, id){
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "https://connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    // Inisialisasi SDK
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '826466053110864',
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v18.0'
+      });
+
+      FB.getLoginStatus(function(response) {
+        if (response.status === 'connected') {
+          // User sudah login
+          getProfile(response.authResponse.accessToken);
+        } else {
+          document.getElementById('result').textContent =
+            'Belum login. Silakan kembali ke halaman utama.';
+        }
+      });
+    };
+
+    // Ambil data profil user
+    function getProfile(token) {
+      FB.api('/me', {fields: 'id,name,email,picture'}, function(response) {
+        if (!response || response.error) {
+          document.getElementById('result').textContent = JSON.stringify(response, null, 2);
+        } else {
+          response.accessToken = token; // tampilkan juga token
+          document.getElementById('result').textContent = JSON.stringify(response, null, 2);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
