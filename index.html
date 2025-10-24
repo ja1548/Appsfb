@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopee Affiliate Login</title>
+</head>
+<body style="font-family: Arial; text-align: center; padding: 40px;">
+  <h2>Selamat Datang di Shopee Affiliate App</h2>
+  <p>Silakan login menggunakan akun Facebook Anda untuk melanjutkan.</p>
+
+  <!-- Tombol Login Facebook -->
+  <button onclick="facebookLogin()" style="padding: 10px 20px; font-size: 16px;">Login dengan Facebook</button>
+
+  <div id="status" style="margin-top: 20px; font-weight: bold;"></div>
+
+  <script>
+    // App ID Facebook kamu
+    const FB_APP_ID = "826466053110864";
+
+    // Inisialisasi SDK Facebook
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : FB_APP_ID,
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v19.0'
+      });
+
+      FB.getLoginStatus(function(response) {
+        statusChangeCallback(response);
+      });
+    };
+
+    // Load SDK Facebook secara async
+    (function(d, s, id){
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "https://connect.facebook.net/id_ID/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    // Cek status login
+    function statusChangeCallback(response) {
+      console.log(response);
+      if (response.status === 'connected') {
+        FB.api('/me', {fields: 'name,email'}, function(user) {
+          document.getElementById('status').innerHTML = 
+            "✅ Login sukses!<br><br>👤 Nama: " + user.name + 
+            "<br>📧 Email: " + (user.email || "Tidak tersedia");
+        });
+      } else {
+        document.getElementById('status').innerHTML = "⚠️ Belum login ke Facebook.";
+      }
+    }
+
+    // Fungsi login
+    function facebookLogin() {
+      FB.login(function(response) {
+        if (response.authResponse) {
+          FB.api('/me', {fields: 'name,email'}, function(user) {
+            document.getElementById('status').innerHTML = 
+              "✅ Login sukses!<br><br>👤 Nama: " + user.name + 
+              "<br>📧 Email: " + (user.email || "Tidak tersedia");
+          });
+        } else {
+          document.getElementById('status').innerHTML = "❌ Login dibatalkan atau gagal.";
+        }
+      }, {scope: 'public_profile,email'});
+    }
+  </script>
+</body>
+</html>
