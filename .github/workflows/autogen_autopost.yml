@@ -1,0 +1,86 @@
+name: AI Auto Caption & Post to Facebook (with Logs)
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"   # jalan tiap 3 jam
+  workflow_dispatch:
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Generate caption & post to Facebook
+        env:
+          FB_TOKEN: ${{ secrets.FB_LONG_LIVED_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          # Tentukan tema acak
+          THEMES=(
+            "kata motivasi bijak"
+            "sindiran mantan kekasih"
+            "sindiran orang tidak tahu terima kasih"
+            "sindiran orang tidak bayar hutang"
+            "kata bijak bekerja keras"
+            "kata lucu belanja online"
+            "kata bijak hidup sukses"
+          )
+          RANDOM_INDEX=$((RANDOM % ${#THEMES[@]}))
+          THEME=${THEMES[$RANDOM_INDEX]}
+
+          echo "🎯 Tema terpilih: $THEME"
+
+          # Generate caption pakai OpenAI API
+          CAPTION=$(curl -s https://api.openai.com/v1/chat/completions \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"model\": \"gpt-3.5-turbo\",
+              \"messages\": [
+                {\"role\": \"system\", \"content\": \"Buat satu kalimat singkat berbahasa Indonesia sesuai tema berikut. Harus cocok untuk posting Facebook, mengandung emosi dan kesan, maksimal 25 kata.\"},
+                {\"role\": \"user\", \"content\": \"$THEME\"}
+              ],
+              \"max_tokens\": 60
+            }" | jq -r '.choices[0].message.content')
+
+          echo "📝 Caption: $CAPTION"
+
+          # Tambahkan link affiliate
+          MESSAGE="$CAPTION
+
+# 🛍️promo Shopee terbaru👉 # https://id.shp.ee/e2eqze5"
+
+          # Pastikan logs.txt ada
+          if [ ! -f logs.txt ]; then
+            echo "📂 Membuat logs.txt baru..."
+            touch logs.txt
+          fi
+
+          # Cek apakah caption sudah pernah dipakai
+          if grep -Fxq "$CAPTION" logs.txt
+          then
+            echo "⏩ Caption sudah pernah digunakan, lewati posting."
+          else
+            # Posting ke Facebook
+            RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v19.0/me/feed" \
+              -F "message=$MESSAGE" \
+              -F "access_token=${FB_TOKEN}")
+
+            echo "📤 Hasil posting: $RESPONSE"
+
+            # Simpan caption ke logs
+            echo "$CAPTION" >> logs.txt
+            echo "---" >> logs.txt
+            echo "$(date)" >> logs.txt
+            echo "" >> logs.txt
+
+            # Commit hasil log ke repo
+            git config --global user.name "AutoPoster"
+            git config --global user.email "actions@github.com"
+            git add logs.txt
+            git commit -m "Update logs $(date)"
+            git push
+          fi
