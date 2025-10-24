@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Shopee Affiliate | Facebook Login</title>
+
+  <!-- Metadata biar tampil bagus saat dibagikan -->
+  <meta property="og:title" content="Shopee Affiliate by Kang Djamil" />
+  <meta property="og:description" content="Aplikasi uji integrasi Facebook untuk Shopee Affiliate." />
+  <meta property="og:image" content="https://ja1548.github.io/Appsfb/logo.png" />
+  <meta property="og:url" content="https://ja1548.github.io/Appsfb/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      text-align: center;
+      background: #f9f9f9;
+    }
+    button {
+      margin: 8px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #1877f2;
+      color: white;
+      font-size: 16px;
+    }
+    pre {
+      text-align: left;
+      background: #eee;
+      padding: 10px;
+      border-radius: 6px;
+      overflow: auto;
+      max-height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔗 Shopee Affiliate - Facebook Integration</h2>
+  <p>Login dengan Facebook untuk uji integrasi.</p>
+
+  <div id="fb-root"></div>
+  <button id="btn-login">Login Facebook</button>
+  <button id="btn-get-profile">Ambil Profil</button>
+  <button id="btn-share">Bagikan Link</button>
+
+  <pre id="out"></pre>
+
+  <script>
+    // 1️⃣ Load Facebook SDK
+    (function(d, s, id){
+       var js, fjs = d.getElementsByTagName(s)[0];
+       if (d.getElementById(id)) return;
+       js = d.createElement(s); js.id = id;
+       js.src = "https://connect.facebook.net/en_US/sdk.js";
+       fjs.parentNode.insertBefore(js, fjs);
+     }(document, 'script', 'facebook-jssdk'));
+
+    // 2️⃣ Inisialisasi SDK
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : '826466053110864', // ID App kamu
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v18.0'
+      });
+
+      FB.getLoginStatus(function(response) {
+        log('Status Awal:', response);
+      });
+    };
+
+    // 🔍 Log helper
+    function log(...args){
+      document.getElementById('out').textContent = JSON.stringify(args, null, 2);
+      console.log(...args);
+    }
+
+    // 3️⃣ Login
+    document.getElementById('btn-login').onclick = function() {
+      FB.login(function(response) {
+        if (response.authResponse) {
+          log('Login Berhasil', response);
+        } else {
+          log('Login dibatalkan.');
+        }
+      }, {scope: 'public_profile,email'});
+    };
+
+    // 4️⃣ Ambil Profil
+    document.getElementById('btn-get-profile').onclick = function() {
+      FB.api('/me', {fields: 'id,name,email,picture'}, function(response) {
+        if (!response || response.error) {
+          log('Gagal ambil profil', response);
+        } else {
+          log('Profil:', response);
+        }
+      });
+    };
+
+    // 5️⃣ Share Link
+    document.getElementById('btn-share').onclick = function() {
+      FB.ui({
+        method: 'share',
+        href: 'https://shopee.co.id/', // link yang dibagikan
+      }, function(response){
+        log('Hasil Share:', response);
+      });
+    };
+  </script>
+</body>
+</html>
