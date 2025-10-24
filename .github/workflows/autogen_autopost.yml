@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
+#
       - name: Generate caption & post to Facebook
         env:
           FB_TOKEN: ${{ secrets.FB_LONG_LIVED_TOKEN }}
