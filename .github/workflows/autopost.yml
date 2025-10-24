@@ -1,0 +1,26 @@
+name: Auto Post to Facebook Every 3 Hours
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"  # Setiap 3 jam
+  workflow_dispatch:
+
+jobs:
+  autopost:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install Dependencies
+        run: npm install node-fetch@2
+
+      - name: Jalankan Script Auto Post
+        env:
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+        run: node Appsfb/autopost-bot.js
