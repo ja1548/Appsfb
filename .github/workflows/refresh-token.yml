@@ -1,0 +1,48 @@
+name: Refresh Facebook Token Every 50 Days
+
+on:
+  schedule:
+    - cron: "0 0 */50 * *"  # setiap 50 hari jam 00:00 UTC
+  workflow_dispatch:
+
+jobs:
+  refresh-token:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install jq
+      run: sudo apt-get install -y jq
+
+    - name: Refresh Token
+      id: refresh
+      run: |
+        echo "🔁 Refreshing Facebook Long-Lived Token..."
+        RESPONSE=$(curl -s -X GET "https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${{ secrets.FB_APP_ID }}&client_secret=${{ secrets.FB_APP_SECRET }}&fb_exchange_token=${{ secrets.FB_LONG_LIVED_TOKEN }}")
+        echo "Response: $RESPONSE"
+
+        NEW_TOKEN=$(echo $RESPONSE | jq -r '.access_token')
+
+        if [ "$NEW_TOKEN" != "null" ] && [ -n "$NEW_TOKEN" ]; then
+          echo "✅ Token baru berhasil dibuat!"
+          echo "NEW_TOKEN=$NEW_TOKEN" >> $GITHUB_ENV
+        else
+          echo "❌ Gagal memperbarui token."
+          exit 1
+        fi
+
+    - name: Update .env file
+      run: |
+        echo "FB_PAGE_TOKEN=${{ env.NEW_TOKEN }}" > .env
+        echo "FB_APP_ID=${{ secrets.FB_APP_ID }}" >> .env
+        echo "✅ File .env berhasil diperbarui."
+
+    - name: Commit and push updated .env
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add .env
+        git commit -m "♻️ Auto refresh Facebook token"
+        git push
