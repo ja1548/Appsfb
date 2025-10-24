@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Post Facebook - Shopee Affiliate</title>
+</head>
+<body style="font-family: Arial; text-align: center; padding: 40px;">
+  <h2>Auto Posting ke Facebook Page</h2>
+  <p>Klik tombol di bawah untuk login dan posting otomatis ke halaman Anda.</p>
+
+  <button onclick="loginWithFacebook()" style="padding: 10px 20px; font-size: 16px;">Login dan Posting</button>
+
+  <div id="status" style="margin-top: 30px; font-weight: bold;"></div>
+
+  <script>
+    const APP_ID = '826466053110864';
+    const POST_MESSAGE = '🔥 Promo Shopee Affiliate Terbaru! Belanja hemat, untung cepat! Cek di sini 👉 https://id.shp.ee/e2eqze5?smtt=0.0.9';
+    
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId      : APP_ID,
+        cookie     : true,
+        xfbml      : true,
+        version    : 'v19.0'
+      });
+    };
+
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "https://connect.facebook.net/id_ID/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    function loginWithFacebook() {
+      FB.login(function(response) {
+        if (response.authResponse) {
+          FB.api('/me/accounts', function(res) {
+            if (res.data && res.data.length > 0) {
+              const page = res.data[0]; // Ambil halaman pertama
+              FB.api(
+                `/${page.id}/feed`,
+                'POST',
+                { message: POST_MESSAGE, access_token: page.access_token },
+                function(postRes) {
+                  if (postRes.id) {
+                    document.getElementById('status').innerHTML =
+                      "✅ Berhasil posting ke halaman: " + page.name + "<br><br>ID Post: " + postRes.id;
+                  } else {
+                    document.getElementById('status').innerHTML =
+                      "❌ Gagal posting. Periksa izin atau token halaman.";
+                  }
+                }
+              );
+            } else {
+              document.getElementById('status').innerHTML = "⚠️ Tidak ditemukan halaman yang Anda kelola.";
+            }
+          });
+        } else {
+          document.getElementById('status').innerHTML = "❌ Login dibatalkan atau gagal.";
+        }
+      }, {scope: 'pages_show_list,pages_manage_posts,pages_read_engagement'});
+    }
+  </script>
+</body>
+</html>
