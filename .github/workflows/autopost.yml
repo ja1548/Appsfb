@@ -1,54 +1,74 @@
 name: AutoPost Facebook Page
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"  # Setiap 1 jam
-  workflow_dispatch:  # Bisa dijalankan manual juga
+    - cron: "0 * * * *" # jalan tiap 1 jam
 
 jobs:
   autopost:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Generate caption otomatis pakai OpenAI
-      id: caption
-      run: |
-        echo "Membuat caption otomatis..."
-        CAPTION=$(curl https://api.openai.com/v1/chat/completions \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
-          -d '{
-            "model": "gpt-4o-mini",
-            "messages": [
-              {"role": "system", "content": "Kamu adalah pembuat caption sosial media yang singkat, menarik, dan bisa menghibur."},
-              {"role": "user", "content": "Buatkan caption acak dengan gaya motivasi bijak, sindiran mantan, sindiran orang tidak tahu terima kasih, sindiran hutang, kerja keras, lucu belanja online, atau bijak hidup sukses."}
-            ],
-            "max_tokens": 60
-          }' | jq -r '.choices[0].message.content')
+      - name: Pilih gambar acak dari folder
+        id: pick_image
+        run: |
+          echo "Memilih gambar acak..."
+          IMAGE=$(find images -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" \) | shuf -n 1)
+          echo "Gambar dipilih: $IMAGE"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
 
-        # Tambahkan link affiliate Shopee
-        FULL_CAPTION="$CAPTION\n\n🔗 https://id.shp.ee/pahd1uk"
+      - name: Buat caption otomatis pakai OpenAI
+        id: caption
+        run: |
+          echo "Membuat caption otomatis..."
+          PROMPTS=(
+            "Kata lucu tentang belanja online, tambahkan link https://id.shp.ee/pahd1uk di akhir."
+            "Kata bijak tentang kerja keras untuk sukses, tambahkan link https://id.shp.ee/pahd1uk."
+            "Sindiran lucu untuk orang yang tidak tahu terima kasih, dengan sentuhan promosi Shopee. Tambahkan link https://id.shp.ee/pahd1uk."
+            "Motivasi bijak untuk hidup sukses, ajak pembaca belanja online. Tambahkan link https://id.shp.ee/pahd1uk."
+            "Kata sindiran lucu untuk yang tidak bayar hutang, dengan gaya halus dan jenaka. Tambahkan link https://id.shp.ee/pahd1uk."
+            "Kata-kata sindiran untuk mantan yang sok lupa tapi masih stalking, tambahkan link https://id.shp.ee/pahd1uk."
+          )
+          PROMPT=${PROMPTS[$RANDOM % ${#PROMPTS[@]}]}
 
-        echo "CAPTION=$FULL_CAPTION" >> $GITHUB_ENV
-        echo "Caption: $FULL_CAPTION"
+          RESPONSE=$(curl -s -X POST "https://api.openai.com/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
+            -d "{
+              \"model\": \"gpt-3.5-turbo\",
+              \"messages\": [
+                {\"role\": \"system\", \"content\": \"Kamu adalah asisten marketing Shopee Affiliate yang menulis caption singkat, lucu, dan menarik.\"},
+                {\"role\": \"user\", \"content\": \"$PROMPT\"}
+              ]
+            }" | jq -r '.choices[0].message.content')
 
-    - name: Post to Facebook Page
-      run: |
-        echo "Posting ke Facebook Page..."
-        RESPONSE=$(curl -X POST "https://graph.facebook.com/v19.0/${{ secrets.FB_PAGE_ID }}/feed" \
-          -F "message=${{ env.CAPTION }}" \
-          -F "access_token=${{ secrets.FB_PAGE_TOKEN }}")
-        echo "Response: $RESPONSE"
+          echo "Caption: $RESPONSE"
+          echo "caption=$RESPONSE" >> $GITHUB_OUTPUT
 
-    - name: Simpan log
-      run: |
-        echo "Log: $(date)" > logs.txt
-        echo "${{ env.CAPTION }}" >> logs.txt
-        git config user.name "github-actions"
-        git config user.email "actions@github.com"
-        git add logs.txt
-        git commit -m "Update logs $(date)" || echo "Tidak ada perubahan"
-        git push || echo "Gagal push (abaikan kalau readonly)"
+      - name: Upload ke Facebook Page
+        run: |
+          echo "Mengupload ke Facebook Page..."
+          CAPTION="${{ steps.caption.outputs.caption }}"
+          IMAGE_PATH="${{ steps.pick_image.outputs.image }}"
+
+          if [ -f "$IMAGE_PATH" ]; then
+            RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v19.0/${{ secrets.PAGE_ID }}/photos" \
+              -F "message=${CAPTION}" \
+              -F "source=@${IMAGE_PATH}" \
+              -F "access_token=${{ secrets.PAGE_ACCESS_TOKEN }}")
+            echo "Response: $RESPONSE"
+          else
+            echo "❌ Gambar tidak ditemukan: $IMAGE_PATH"
+          fi
+
+      - name: Simpan log hasil
+        run: |
+          echo "Tanggal: $(date)" >> log.txt
+          echo "Caption: ${{ steps.caption.outputs.caption }}" >> log.txt
+          echo "Gambar: ${{ steps.pick_image.outputs.image }}" >> log.txt
+          echo "=====================" >> log.txt
+          cat log.txt
