@@ -1,0 +1,46 @@
+name: AutoPost Facebook Every Hour
+
+on:
+  schedule:
+    - cron: "0 * * * *" # jalan tiap 1 jam
+  workflow_dispatch:
+
+jobs:
+  autopost:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Generate random caption
+        id: caption
+        run: |
+          import random, json
+
+          captions = [
+              "💬 Hidup itu keras, tapi kamu harus lebih keras 💪",
+              "😎 Mantan bukan untuk dikenang, tapi untuk dijadikan pelajaran",
+              "💸 Belanja online itu mudah, yang susah itu nahan diri 😆",
+              "🙏 Orang yang tidak tahu terima kasih, biarlah Tuhan yang membalas",
+              "💪 Sukses itu bukan karena hoki, tapi karena kerja keras",
+              "😂 Hutang itu seperti mantan, kalau gak ditagih gak bayar",
+              "🔥 Terus berjuang, biar hidup gak cuma jadi penonton"
+          ]
+
+          caption = random.choice(captions)
+          print(f"::set-output name=text::{caption}")
+
+      - name: Post to Facebook
+        run: |
+          CAPTION="${{ steps.caption.outputs.text }}"
+          MESSAGE="$CAPTION 🔗 Cek promo Shopee 👉 https://id.shp.ee/e2eqze5"
+
+          curl -X POST "https://graph.facebook.com/v21.0/me/feed" \
+          -F "message=$MESSAGE" \
+          -F "access_token=${{ secrets.FB_ACCESS_TOKEN }}"
