@@ -2,7 +2,7 @@ name: Auto Post to Facebook
 
 on:
   schedule:
-    - cron: "0 */3 * * *"   # jalan tiap 3 jam
+    - cron: "0 * * * *"   # jalan tiap 3 jam
   workflow_dispatch:
 
 jobs:
