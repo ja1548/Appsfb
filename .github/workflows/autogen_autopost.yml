@@ -1,7 +1,7 @@
 name: AI Auto Caption & Post to Facebook (with Logs)
 on:
   schedule:
-    - cron: "0 */3 * * *"   # jalan tiap 3 jam
+    - cron: "5 */0 * * *"   # jalan tiap 5 menit
   workflow_dispatch:
 jobs:
   post:
@@ -44,7 +44,7 @@ jobs:
 
           # Tambahkan link affiliate
           MESSAGE="$CAPTION
-          🛍️Promo Shopee Terbaru👉 # https://id.shp.ee/e2eqze5"
+          🛍️Promo Shopee Terbaru👉  https://id.shp.ee/e2eqze5"
           # Pastikan logs.txt ada
           if [ ! -f logs.txt ]; then
             echo "📂 Membuat logs.txt baru..."
