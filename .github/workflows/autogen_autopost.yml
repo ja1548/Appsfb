@@ -1,7 +1,7 @@
 name: AI Auto Caption & Post to Facebook (with Logs)
 on:
   schedule:
-    - cron: " **/5 * * *"   # jalan tiap 5 menit
+    - cron: " *0*/1 * * *"   # jalan tiap 5 menit
   workflow_dispatch:
 jobs:
   post:
