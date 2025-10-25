@@ -1,8 +1,8 @@
-name: AutoPost Facebook Every Hour
+name: AI Auto Caption & Facebook Post (Every Hour)
 
 on:
   schedule:
-    - cron: "0 * * * *" # jalan tiap 1 jam
+    - cron: "0 * * * *"  # tiap 1 jam
   workflow_dispatch:
 
 jobs:
@@ -11,36 +11,70 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      - name: Generate random caption
-        id: caption
+      - name: Generate AI caption & post to Facebook
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FB_TOKEN: ${{ secrets.FB_LONG_LIVED_TOKEN }}
         run: |
-          import random, json
+          echo "🚀 Mulai generate caption otomatis..."
 
-          captions = [
-              "💬 Hidup itu keras, tapi kamu harus lebih keras 💪",
-              "😎 Mantan bukan untuk dikenang, tapi untuk dijadikan pelajaran",
-              "💸 Belanja online itu mudah, yang susah itu nahan diri 😆",
-              "🙏 Orang yang tidak tahu terima kasih, biarlah Tuhan yang membalas",
-              "💪 Sukses itu bukan karena hoki, tapi karena kerja keras",
-              "😂 Hutang itu seperti mantan, kalau gak ditagih gak bayar",
-              "🔥 Terus berjuang, biar hidup gak cuma jadi penonton"
-          ]
+          # Tentukan tema acak
+          THEMES=(
+            "kata motivasi bijak"
+            "sindiran mantan kekasih"
+            "sindiran orang tidak tahu terima kasih"
+            "sindiran orang tidak bayar hutang"
+            "kata bijak bekerja keras"
+            "kata lucu belanja online"
+            "kata bijak hidup sukses"
+          )
+          RANDOM_INDEX=$((RANDOM % ${#THEMES[@]}))
+          THEME=${THEMES[$RANDOM_INDEX]}
 
-          caption = random.choice(captions)
-          print(f"::set-output name=text::{caption}")
+          echo "🎯 Tema terpilih: $THEME"
 
-      - name: Post to Facebook
-        run: |
-          CAPTION="${{ steps.caption.outputs.text }}"
-          MESSAGE="$CAPTION 🔗 Cek promo Shopee 👉 https://id.shp.ee/e2eqze5"
+          # Generate caption pakai OpenAI API
+          CAPTION=$(curl -s https://api.openai.com/v1/chat/completions \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"model\": \"gpt-3.5-turbo\",
+              \"messages\": [
+                {\"role\": \"system\", \"content\": \"Buat satu kalimat singkat berbahasa Indonesia sesuai tema berikut. Harus cocok untuk posting Facebook, mengandung emosi dan kesan, maksimal 25 kata.\"},
+                {\"role\": \"user\", \"content\": \"$THEME\"}
+              ],
+              \"max_tokens\": 60
+            }" | jq -r '.choices[0].message.content')
 
-          curl -X POST "https://graph.facebook.com/v21.0/me/feed" \
-          -F "message=$MESSAGE" \
-          -F "access_token=${{ secrets.FB_ACCESS_TOKEN }}"
+          echo "📝 Caption dibuat: $CAPTION"
+
+          # Tambahkan link Shopee affiliate
+          MESSAGE="$CAPTION 🛍️ Cek promo Shopee 👉 https://id.shp.ee/e2eqze5"
+
+          # Buat logs.txt kalau belum ada
+          if [ ! -f logs.txt ]; then
+            echo "📄 Membuat logs.txt baru..."
+            touch logs.txt
+          fi
+
+          # Posting ke Facebook
+          RESPONSE=$(curl -s -X POST "https://graph.facebook.com/v19.0/me/feed" \
+            -F "message=$MESSAGE" \
+            -F "access_token=${FB_TOKEN}")
+
+          echo "📢 Hasil posting: $RESPONSE"
+
+          # Simpan caption ke logs
+          echo "$CAPTION" >> logs.txt
+          echo "---" >> logs.txt
+          echo "$(date)" >> logs.txt
+          echo "" >> logs.txt
+
+          # Commit hasil log ke repo
+          git config --global user.name "AutoPoster"
+          git config --global user.email "actions@github.com"
+          git add logs.txt
+          git commit -m "Update logs $(date)"
+          git push
