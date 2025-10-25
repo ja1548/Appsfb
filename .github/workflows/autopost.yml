@@ -23,13 +23,17 @@ jobs:
           -d '{
             "model": "gpt-4o-mini",
             "messages": [
-              {"role": "system", "content": "Kamu adalah penulis caption sosial media yang singkat dan menarik."},
-              {"role": "user", "content": "Buatkan caption promosi produk affiliate secara random dan menarik dalam 1 kalimat."}
+              {"role": "system", "content": "Kamu adalah pembuat caption sosial media yang singkat, menarik, dan bisa menghibur."},
+              {"role": "user", "content": "Buatkan caption acak dengan gaya motivasi bijak, sindiran mantan, sindiran orang tidak tahu terima kasih, sindiran hutang, kerja keras, lucu belanja online, atau bijak hidup sukses."}
             ],
             "max_tokens": 60
           }' | jq -r '.choices[0].message.content')
-        echo "CAPTION=$CAPTION" >> $GITHUB_ENV
-        echo "Caption: $CAPTION"
+
+        # Tambahkan link affiliate Shopee
+        FULL_CAPTION="$CAPTION\n\n🔗 https://id.shp.ee/pahd1uk"
+
+        echo "CAPTION=$FULL_CAPTION" >> $GITHUB_ENV
+        echo "Caption: $FULL_CAPTION"
 
     - name: Post to Facebook Page
       run: |
