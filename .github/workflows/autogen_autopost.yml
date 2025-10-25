@@ -51,7 +51,7 @@ jobs:
           # Tambahkan link affiliate
           MESSAGE="$CAPTION
 
-#🛍️ Cek promo Shopee Affiliate 👉 https://id.shp.ee/e2eqze5?smtt=0.0.9"
+🛍️ Cek promo Shopee👉 https://id.shp.ee/e2eqze5"
 
           # Pastikan logs.txt ada
           if [ ! -f logs.txt ]; then
